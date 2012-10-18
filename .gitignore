@@ -1,0 +1,10 @@
+# Misc. Ignores
+.DS_Store
+.idea
+.swp
+tests
+
+# Composer Ignores
+composer.lock
+composer.phar
+vendor/
