@@ -12,7 +12,7 @@
  */
 class DarkSky
 {
-    /** @const BASE_URL The base url for the API calls */
+    /** @var BASE_URL The base url for the API calls */
     const BASE_URL = 'https://api.darkskyapp.com/v1';
 
     /** @var string $apiKey The Dark Sky developer API key */
@@ -45,7 +45,7 @@ class DarkSky
      */
     public function getForecast($lat, $long)
     {
-        $endpoint = '/forecast/' . $this->apiKey . '/' . (string) $lat . ',' . (string) $long;
+        $endpoint = sprintf('/forecast/%s/%s,%s', $this->apiKey, $lat, $long);
         return $this->makeAPIRequest($endpoint);
     }
 
@@ -59,7 +59,7 @@ class DarkSky
      */
     public function getBriefForecast($lat, $long)
     {
-        $endpoint = '/forecast/' . $this->apiKey . '/' . (string) $lat . ',' . (string) $long;
+        $endpoint = sprintf('/forecast/%s/%s,%s', $this->apiKey, $lat, $long);
         return $this->makeAPIRequest($endpoint);
     }
 
@@ -74,30 +74,48 @@ class DarkSky
      * Each parameter should follow this format:
      *
      *  array(
-     *      'lat'  => 37.126617,    // float, required
-     *      'long' => -87.842756,   // float, required
-     *      'time' => 1350531963    // integer, optional*
+     *      'lat'  => 37.126617,    // float, latitude, required
+     *      'long' => -87.842756,   // float, longitude, required
+     *      'time' => 1350531963    // integer, unix timestamp, optional
      *  )
      *
-     * If the 'time' key isn't included, the current time will be used.
+     * If the 'time' key isn't included, the current time will be used. The given
+     * timestamp will be automatically converted to GMT time, so do not pre-convert
+     * this value.
      *
      * @param array Associative array of lat/long/[time] to pull information from.
+     *
+     * @return array The decoded JSON response from the API call
+     *
+     * @throws \InvalidArgumentException If a given time is outside the -8hrs to +1hr range
      */
     public function getPrecipitation()
     {
-        $params = '';
         $now = time();
+        $params = array();
         foreach(func_get_args() as $arg) {
             $lat  = $arg['lat'];
             $long = $arg['long'];
-            
-            //TODO: convert default time to GMT, check time against constraints
             $time = (isset($arg['time'])) ? $arg['time'] : $now;
 
-            $params .= $lat . ',' . $long . ',' . $time . ';';
+            $dt = new \DateTime();
+            $dt->setTimestamp($time);
+
+            // The DarkSky API requires the time be between -8hrs and +1hrs from now
+            $min = new \DateTime("-8 hours");
+            $max = new \DateTime("+1 hours");
+
+            if ($dt < $min || $dt > $max) {
+                throw new \InvalidArgumentException('Time value must greater than -8hrs and less the +1hr from now.');
+            }
+
+            // The DarkSky API expects this timestamp to be in GMT.
+            $dt->setTimezone(new DateTimeZone('GMT'));
+
+            $params[] = implode(',', array($lat, $long, $dt->getTimestamp()));
         }
 
-        $endpoint = '/precipitation/' . $this->apiKey . '/' . $params;
+        $endpoint = sprintf('/precipitation/%s/%s', $this->apiKey, implode(';', $params));
         return $this->makeAPIRequest($endpoint);
     }
 
@@ -107,16 +125,20 @@ class DarkSky
      * @return array The decoded JSON response from the API call
      */
     public function getInterestingStorms() {
-        $endpoint = '/interesting/' . $this->apiKey;
+        $endpoint = sprintf('/interesting/%s', $this->apiKey);
         return $this->makeAPIRequest($endpoint);
     }
 
     /**
+     * Makes a request to the Dark Sky API. Does *not* use the cURL library; however,
+     * it does require the server to have allow_url_fopen enabled.
+     *
      * @param $url string The URL endpoint to hit
      *
      * @return array The decoded JSON response from the API call
      *
-     * @throws \Exception If the API call returns a response that can't be decoded
+     * @throws \Exception If we can't contact the API or
+     *                    the API call returns a response that can't be decoded
      */
     private function makeAPIRequest($endpoint)
     {
@@ -126,6 +148,10 @@ class DarkSky
             $response = @file_get_contents($url);
         } else {
             $response = file_get_contents($url);
+        }
+
+        if ($response === false) {
+            throw new \Exception('There was an error contacting the DarkSky API.');
         }
 
         $json = json_decode($response, true);
@@ -139,7 +165,7 @@ class DarkSky
                     $reason = 'Unexpected control character found';
                     break;
                 default:
-                    $reason = 'Unknown error, code ' . $error_code;
+                    $reason = sprintf('Unknown error. Error code %s', $error_code);
                     break;
             }
 
