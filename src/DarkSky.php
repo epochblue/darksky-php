@@ -59,7 +59,7 @@ class DarkSky
      */
     public function getBriefForecast($lat, $long)
     {
-        $endpoint = sprintf('/forecast/%s/%s,%s', $this->apiKey, $lat, $long);
+        $endpoint = sprintf('/brief_forecast/%s/%s,%s', $this->apiKey, $lat, $long);
         return $this->makeAPIRequest($endpoint);
     }
 
