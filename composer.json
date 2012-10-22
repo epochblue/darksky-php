@@ -2,6 +2,8 @@
     "name": "epochblue/darksky-php",
     "description": "A PHP wrapper for the DarkSky developer API",
     "keywords": ["api", "weather", "darksky", "dark sky"],
+    "homepage": "https://www.github.com/epochblue/darksky-php",
+    "type": "library",
     "license": "MIT",
     "authors": [
         {
