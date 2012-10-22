@@ -19,7 +19,7 @@ use it in your project. If you're new to Composer, please see the Composer websi
 Composer is and how to use it. Once you have your project set up to use Composer, to include `darksky-php`, add
 the following to your `composer.json` file:
 
-```javascript
+```json
 {
     "require": {
         "epochblue/darksky-php": "dev-master"
