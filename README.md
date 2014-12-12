@@ -1,6 +1,8 @@
 darksky-php
 ===========
 
+**NOTE**: This API wrapper is for an old version of the API and has been superseded. This library is no longer maintained.
+
 A simple PHP wrapper for interacting with the [DarkSky API](https://developer.darkskyapp.com/docs).
 
 
